@@ -1,0 +1,62 @@
+# MotionMind Clipper: default word list (ships with mmclip).
+# A creator's own words.txt (next to clipper.json) is added on top of this file; it does not replace it.
+#
+# Format: plain text, one entry per line, under a [section]. Lines starting with # are comments.
+#   [seru]     excitement words: a peak with these words nearby scores higher (HIGHLIGHT.md §3)
+#   [nama]     names and game terms: given to Whisper as vocabulary so it writes them correctly
+#   [koreksi]  misheard => correct, applied to the transcript before captions (whole words, case-insensitive)
+#   [sensor]   words masked in captions (anjing => anj*ng); they still count as excitement
+# Multi-word entries are fine ("lha kok"). Case does not matter.
+
+[seru]
+# Indonesian
+anjir
+anjay
+gila
+gokil
+parah
+mantap
+wkwk
+astaga
+waduh
+aduh
+walah
+kok bisa
+ayo ayo
+mati
+# Javanese
+lho
+lha kok
+piye
+wis
+ndang
+mbok
+edan
+ra mungkin
+wes ta
+meneh
+# English gaming
+clutch
+gg
+no way
+let's go
+ace
+maniac
+savage
+noob
+
+[nama]
+
+[koreksi]
+
+[sensor]
+anjing
+bangsat
+babi
+kontol
+memek
+jancok
+cok
+asu
+fuck
+shit

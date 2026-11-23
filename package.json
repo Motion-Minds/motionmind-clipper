@@ -1,0 +1,29 @@
+{
+  "name": "motionmind-clipper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Find the highlights in a gaming stream VOD (file or YouTube/TikTok link) and cut them into vertical clips with raw subtitles.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 4320",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 4320",
+    "typecheck": "tsc --noEmit",
+    "clip": "node --disable-warning=ExperimentalWarning core/cli.ts"
+  },
+  "dependencies": {
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}

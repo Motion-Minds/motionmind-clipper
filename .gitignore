@@ -1,0 +1,16 @@
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+
+# UI fonts are not committed (licences); see public/fonts/README.md
+public/fonts/*
+!public/fonts/README.md
+
+# Private: personal trial data, the creator's own word list, research notes and the roadmap
+trials/
+examples/
+research/
+HIGHLIGHT.md
+TODO.md
