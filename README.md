@@ -272,6 +272,9 @@ Do not post credentials or working exploits in a public issue.
 - Local UI and CLI for heuristic highlight selection, time ranges and vertical exports.
 - Optional Whisper transcription, word-list customization and subtitle editing.
 - Publication hardening: loopback / origin guards, regression checks and GitHub Actions CI.
+- Windows support: no console windows from the background worker, portable clip paths,
+  encoding-safe yt-dlp downloads, retries for transient file locks and safe upload names.
+  CI runs the end-to-end pipeline on Ubuntu and Windows; Whisper on Windows is not covered.
 
 ## License
 
