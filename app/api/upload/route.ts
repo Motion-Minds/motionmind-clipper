@@ -5,13 +5,13 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as WebReadableStream } from "node:stream/web";
-import { createJob, jobDir, saveJob } from "@/core/jobs.ts";
+import { createJob, jobDir, saveJob, uploadName } from "@/core/jobs.ts";
 import { validateRanges } from "@/core/range.ts";
 import { startWorker } from "@/core/worker.ts";
 
 export async function POST(request: Request) {
   const params = new URL(request.url).searchParams;
-  const name = path.basename(params.get("name") ?? "").replace(/[^\w.\- ]+/g, "_") || "video.mp4";
+  const name = uploadName(params.get("name") ?? "");
   const count = Math.max(0, Math.min(30, Math.round(Number(params.get("count")) || 0)));
   if (!request.body) return Response.json({ error: "Empty upload." }, { status: 400 });
   let ranges;

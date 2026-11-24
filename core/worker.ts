@@ -9,6 +9,7 @@ export function startWorker(id: string): void {
   const child = spawn(process.execPath, ["--disable-warning=ExperimentalWarning", path.join(process.cwd(), "core", "cli.ts"), "run", id], {
     cwd: process.cwd(),
     detached: true,
+    windowsHide: true,
     stdio: ["ignore", log, log],
   });
   child.unref();

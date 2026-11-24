@@ -52,13 +52,18 @@ async function step<T>(job: Job, id: StepId, fn: (detail: Detail, s: Step) => Pr
   }
 }
 
-/** yt-dlp download; returns the final file path. */
-async function ytdlp(url: string, args: string[], label: string, detail: Detail): Promise<string> {
-  const { stdout } = await run(
+/**
+ * yt-dlp download to `<out>.<ext>`; returns that file. Found on disk, not parsed from yt-dlp's console output,
+ * whose encoding depends on the platform (Windows code pages garble non-ASCII paths).
+ */
+async function ytdlp(url: string, args: string[], out: string, label: string, detail: Detail): Promise<string> {
+  const dir = path.dirname(out);
+  const base = path.basename(out);
+  await run(
     "yt-dlp",
     [
       "--no-warnings", "--no-playlist", "--force-overwrites", "--progress", "--newline",
-      "--progress-template", "download:%(progress._percent_str)s", "--print", "after_move:filepath", ...args, url,
+      "--progress-template", "download:%(progress._percent_str)s", ...args, "-o", `${out}.%(ext)s`, url,
     ],
     {
       onLine(line) {
@@ -67,7 +72,13 @@ async function ytdlp(url: string, args: string[], label: string, detail: Detail)
       },
     },
   );
-  const file = stdout.split("\n").map((l) => l.trim()).filter(exists).pop();
+  // `<base>.<ext>` only: not leftovers such as `<base>.f137.mp4` or `<base>.mp4.part`.
+  const file = fs
+    .readdirSync(dir)
+    .filter((f) => f.startsWith(`${base}.`) && /^[a-z\d]+$/i.test(f.slice(base.length + 1)))
+    .map((f) => path.join(dir, f))
+    .filter(exists)
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0];
   if (!file) throw new Error(`yt-dlp did not produce a file (${label})`);
   return file;
 }
@@ -117,12 +128,12 @@ async function ingest(job: Job, work: string, detail: Detail): Promise<Ingested>
     saveJob(job);
     if (!duration || duration <= SHORT) {
       fs.mkdirSync(path.join(dir, "source"), { recursive: true });
-      full = await ytdlp(url, ["-f", "bv*[height<=1080]+ba/b[height<=1080]/b", "--merge-output-format", "mp4",
-        "-o", path.join(dir, "source", "full.%(ext)s")], "video", detail);
+      full = await ytdlp(url, ["-f", "bv*[height<=1080]+ba/b[height<=1080]/b", "--merge-output-format", "mp4"],
+        path.join(dir, "source", "full"), "video", detail);
       audioSrc = videoSrc = full;
     } else {
-      audioSrc = await ytdlp(url, ["-f", "ba[ext=m4a]/ba", "-o", path.join(work, "proxy-audio.%(ext)s")], "audio", detail);
-      videoSrc = await ytdlp(url, ["-f", "bv*[height<=160]/wv*/bv*", "-o", path.join(work, "proxy-low.%(ext)s")], "video proxy", detail);
+      audioSrc = await ytdlp(url, ["-f", "ba[ext=m4a]/ba"], path.join(work, "proxy-audio"), "audio", detail);
+      videoSrc = await ytdlp(url, ["-f", "bv*[height<=160]/wv*/bv*"], path.join(work, "proxy-low"), "video proxy", detail);
     }
   } else {
     full = audioSrc = videoSrc = job.input.value;
@@ -244,7 +255,8 @@ async function loudness(input: string[]): Promise<Record<string, string>> {
 
 /** Vertical 1080×1920 "fit-blur": the whole frame in the middle over a blurred copy; audio at −14 LUFS. */
 async function renderClip(job: Job, src: Ingested, p: Pick, id: string, words: Word[], list: WordList, detail: Detail): Promise<Clip> {
-  const rel = path.join("clips", id);
+  // Stored in job.json and used in /media URLs: always "/" separators, also on Windows.
+  const rel = path.posix.join("clips", id);
   const dir = path.join(jobDir(job.id), rel);
   fs.mkdirSync(dir, { recursive: true });
   let input: string[];
@@ -254,7 +266,7 @@ async function renderClip(job: Job, src: Ingested, p: Pick, id: string, words: W
   } else {
     detail(`clip ${id}: downloading ${clock(p.start)}–${clock(p.end)}`);
     section = await ytdlp(job.input.value, ["-f", "bv*[height<=1080]+ba/b", "--merge-output-format", "mp4",
-      "--download-sections", `*${p.start.toFixed(2)}-${p.end.toFixed(2)}`, "-o", path.join(dir, "section.%(ext)s")],
+      "--download-sections", `*${p.start.toFixed(2)}-${p.end.toFixed(2)}`], path.join(dir, "section"),
       `clip ${id}: downloading`, detail);
     input = ["-i", section];
   }
@@ -288,10 +300,10 @@ async function renderClip(job: Job, src: Ingested, p: Pick, id: string, words: W
     score: +p.score.toFixed(2),
     reasons: p.reasons,
     keywords: p.keywords,
-    video: path.join(rel, "video.mp4"),
-    poster: path.join(rel, "poster.jpg"),
-    srt: path.join(rel, "captions.srt"),
-    txt: path.join(rel, "transcript.txt"),
+    video: path.posix.join(rel, "video.mp4"),
+    poster: path.posix.join(rel, "poster.jpg"),
+    srt: path.posix.join(rel, "captions.srt"),
+    txt: path.posix.join(rel, "transcript.txt"),
     words: clipWords,
     range: p.range,
   };
@@ -424,7 +436,8 @@ export async function renderWindows(id: string, windows: Window[]): Promise<void
     });
     await step(job, "select", async (d) => d(`${picks.length} windows picked by agent`));
     await step(job, "render", async (d) => {
-      fs.rmSync(path.join(jobDir(id), "clips"), { recursive: true, force: true });
+      // maxRetries: on Windows a clip still streaming to the browser can briefly block the delete.
+      fs.rmSync(path.join(jobDir(id), "clips"), { recursive: true, force: true, maxRetries: 5 });
       job.clips = [];
       saveJob(job);
       for (const [i, p] of picks.entries()) {

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export const HOME = process.env.CLIPPER_HOME ?? path.join(os.homedir(), "MotionMindClipper");
+export const HOME = path.resolve(process.env.CLIPPER_HOME ?? path.join(os.homedir(), "MotionMindClipper"));
 export const JOBS = path.join(HOME, "jobs");
 export const jobDir = (id: string) => path.join(JOBS, id);
 
@@ -130,7 +130,33 @@ export function saveJob(job: Job): void {
   const file = path.join(jobDir(job.id), "job.json");
   const tmp = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(job, null, 2));
-  fs.renameSync(tmp, file);
+  replaceFile(tmp, file);
+}
+
+/** Windows: antivirus and indexers briefly lock fresh files, so replacing one can fail with EPERM/EACCES/EBUSY. */
+function replaceFile(from: string, to: string): void {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (e) {
+      const code = (e as NodeJS.ErrnoException).code ?? "";
+      if (process.platform !== "win32" || attempt >= 15 || !["EPERM", "EACCES", "EBUSY"].includes(code)) throw e;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.min(250, 10 * 2 ** attempt));
+    }
+  }
+}
+
+/**
+ * Stored name for an uploaded file, valid on every OS: no path or special characters, no Windows device name
+ * (CON, NUL, COM1 …) or trailing dot/space, and short enough for tools without Windows long-path support.
+ */
+export function uploadName(raw: string): string {
+  const clean = path.posix.basename(raw.replace(/\\/g, "/")).replace(/[^\w.\- ]+/g, "_").replace(/[. ]+$/, "");
+  const ext = path.extname(clean);
+  let name = clean.slice(0, clean.length - ext.length).slice(0, 80) + ext.slice(0, 10);
+  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(name.split(".")[0].trim())) name = `_${name}`;
+  return name || "video.mp4";
 }
 
 export function readJob(id: string): Job | null {

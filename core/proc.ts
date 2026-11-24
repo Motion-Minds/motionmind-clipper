@@ -11,7 +11,8 @@ export interface RunOptions {
 /** Run a command; resolves with stdout/stderr text, rejects with the stderr tail on a non-zero exit. */
 export function run(cmd: string, args: string[], opts: RunOptions = {}): Promise<{ stdout: string; stderr: string }> {
   const { promise, resolve, reject } = Promise.withResolvers<{ stdout: string; stderr: string }>();
-  const child = spawn(cmd, args, { cwd: opts.cwd, stdio: ["ignore", "pipe", "pipe"] });
+  // windowsHide: the detached worker has no console, so each child would otherwise open its own window.
+  const child = spawn(cmd, args, { cwd: opts.cwd, stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
   const out: Buffer[] = [];
   const err: Buffer[] = [];
   let partial = "";

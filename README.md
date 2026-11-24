@@ -90,9 +90,34 @@ Keep that environment active when starting Clipper so the worker can find `whisp
 The first transcription downloads the selected model; allow time and disk space for
 the model, recordings, proxies and rendered clips.
 
+On **Windows** (PowerShell):
+
+```powershell
+winget install --id OpenJS.NodeJS.LTS -e
+winget install --id Gyan.FFmpeg -e
+winget install --id yt-dlp.yt-dlp -e
+```
+
+Open a **new** terminal afterwards so the updated `PATH` is picked up, then check with
+`node --version`, `ffmpeg -version` and `yt-dlp --version`. For subtitles:
+
+```powershell
+winget install --id Python.Python.3.11 -e
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade openai-whisper
+whisper --help
+```
+
+If PowerShell refuses to run `Activate.ps1`, run
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in that window first.
+
 On Linux, install Node and FFmpeg using your preferred package manager, then follow
-the upstream yt-dlp and Whisper installation instructions. macOS / Apple Silicon
-is the exercised platform; Linux media processing and Windows are not verified.
+the upstream yt-dlp and Whisper installation instructions.
+
+**Platform status:** macOS (Apple Silicon) is used day to day. CI runs the whole pipeline
+(local file, exact windows, link download through yt-dlp; without Whisper) on Ubuntu and
+Windows. Whisper transcription and real YouTube / TikTok downloads are not covered by CI.
 
 ### 2. Start Clipper
 
@@ -142,6 +167,8 @@ npm run clip -- clips JOB_ID \
 ```
 
 Use the actual ID printed by the CLI in place of `JOB_ID`.
+In PowerShell, write each command on one line (the trailing `\` is for macOS / Linux shells)
+and use `.\stream.mp4` for a file in the current folder.
 **`clips` replaces the job's existing clip directory, including subtitle edits.**
 Copy exports you want to keep before re-rendering.
 
@@ -153,6 +180,15 @@ Export settings in the shell **before** starting the UI or CLI; detached workers
 export CLIPPER_HOME="$HOME/MotionMindClipper"
 export CLIPPER_WHISPER_MODEL="small"
 export CLIPPER_LANGUAGE="id"
+npm start
+```
+
+In PowerShell:
+
+```powershell
+$env:CLIPPER_HOME = "$HOME\MotionMindClipper"
+$env:CLIPPER_WHISPER_MODEL = "small"
+$env:CLIPPER_LANGUAGE = "id"
 npm start
 ```
 
@@ -220,8 +256,11 @@ npm test
 npm run build
 ```
 
-CI runs these checks on Node 22.18 and 24. The current regression tests cover local
-request boundaries, not highlight quality or the full media pipeline. For processing
+`npm test` needs `ffmpeg`, `ffprobe` and `yt-dlp` on `PATH`: besides the local request
+boundaries and upload names, it runs the real CLI end to end on synthetic footage
+(local file, exact windows, link download through a local HTTP server), under a data
+folder with a space and a non-ASCII character. CI runs all checks on Ubuntu and Windows,
+Node 22.18 and 24. Highlight quality and Whisper are not covered; for processing
 changes, also exercise a short recording you are allowed to share and inspect the output.
 Keep job data, models, recordings, optional font files and personal word lists out of PRs.
 

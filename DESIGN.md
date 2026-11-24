@@ -43,6 +43,7 @@ Code map:
 | `core/range.ts`, `core/format.ts` | time ranges, time formatting/parsing |
 | `core/worker.ts`, `core/cli.ts` | starting the worker, command line |
 | `proxy.ts`, `tests/local-access.test.ts` | loopback / origin boundary and its regression checks |
+| `tests/pipeline.test.ts` | CLI end to end on synthetic footage (file, windows, link via yt-dlp); CI on Ubuntu + Windows |
 
 ## 3. Pipeline
 
