@@ -4,6 +4,29 @@ next-env.d.ts
 *.tsbuildinfo
 .DS_Store
 
+# Local credentials and runtime data (including an in-repository CLIPPER_HOME)
+.env
+.env.*
+*.pem
+*.key
+*.log
+.venv/
+__pycache__/
+cache/
+/jobs/
+/.clipper/
+/MotionMindClipper/
+/words.txt
+
+# Recordings and rendered clips are not source assets; README demos are intentional
+*.mp4
+*.mkv
+*.mov
+*.webm
+*.wav
+*.mp3
+*.m4a
+
 # UI fonts are not committed (licences); see public/fonts/README.md
 public/fonts/*
 !public/fonts/README.md

@@ -26,6 +26,9 @@ flowchart LR
   survives page reloads and does not block the UI server.
 - **External tools**: ffmpeg/ffprobe for everything audio/video, yt-dlp for links, openai-whisper for speech. No
   model or service is bundled; without whisper, clips have no subtitles.
+- **Local request boundary**: `proxy.ts` rejects non-loopback `Host` values (DNS rebinding) and foreign origins /
+  cross-site browser fetches before pages, APIs or media routes run. CLI clients without browser headers still
+  work. This is defense in depth for the loopback-only server, not authentication or a sandbox.
 
 Code map:
 
@@ -39,6 +42,7 @@ Code map:
 | `core/subtitles.ts` | saving edited subtitles |
 | `core/range.ts`, `core/format.ts` | time ranges, time formatting/parsing |
 | `core/worker.ts`, `core/cli.ts` | starting the worker, command line |
+| `proxy.ts`, `tests/local-access.test.ts` | loopback / origin boundary and its regression checks |
 
 ## 3. Pipeline
 

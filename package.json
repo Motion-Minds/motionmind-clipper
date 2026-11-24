@@ -13,6 +13,7 @@
     "build": "next build",
     "start": "next start -H 127.0.0.1 -p 4320",
     "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.ts",
     "clip": "node --disable-warning=ExperimentalWarning core/cli.ts"
   },
   "dependencies": {
