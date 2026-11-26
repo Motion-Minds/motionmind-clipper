@@ -12,13 +12,15 @@ interface Props {
   seek: (t: number) => void;
   /** False while the job is still running. */
   editable: boolean;
+  /** False when Whisper was not installed for this job. */
+  transcribed: boolean;
   onSaved: (clip: Clip) => void;
 }
 
 const round = (s: number) => Math.round(s * 10) / 10;
 
 /** Raw Whisper words (read-only, per word) or the user's edited lines; "Edit subtitles" turns either into a line editor. */
-export function Subtitles({ jobId, clip, now, seek, editable, onSaved }: Props) {
+export function Subtitles({ jobId, clip, now, seek, editable, transcribed, onSaved }: Props) {
   const raw = toCues(clip.words);
   const [draft, setDraft] = useState<SubtitleCue[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -154,7 +156,11 @@ export function Subtitles({ jobId, clip, now, seek, editable, onSaved }: Props) 
           </div>
         )
       ) : raw.length === 0 ? (
-        <div className="empty small">No speech transcribed in this clip.</div>
+        <div className="empty small">
+          {transcribed
+            ? "No speech recognised in this clip."
+            : "No subtitles: Whisper isn't installed, so speech wasn't transcribed. Install openai-whisper, then import the video again."}
+        </div>
       ) : (
         <div className="transcript">
           {raw.map((c) => (

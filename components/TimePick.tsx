@@ -1,31 +1,51 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
+import { clock, parseClock } from "@/core/format.ts";
 
-/** H : MM : SS as three selects, so a time can only be clicked, never mistyped. */
+/**
+ * A time as typed or pasted text: "1:01:53", "61:53", "3713" or "1h1m53s".
+ * Each readable value is sent up at once; an unreadable or too-late one stays local, is marked invalid
+ * and blocks the form's submit through the browser's own validation.
+ */
 export function TimePick({ value, max, onChange, label }: { value: number; max: number; onChange: (s: number) => void; label: string }) {
-  const h = Math.floor(value / 3600);
-  const m = Math.floor((value % 3600) / 60);
-  const s = Math.floor(value % 60);
-  const hours = Math.max(0, Math.floor(max / 3600));
-  const set = (nh: number, nm: number, ns: number) => onChange(Math.min(max, nh * 3600 + nm * 60 + ns));
-  const opts = (n: number, pad: boolean) =>
-    Array.from({ length: n }, (_, i) => (
-      <option key={i} value={i}>
-        {pad ? String(i).padStart(2, "0") : i}
-      </option>
-    ));
+  const input = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState(clock(value));
+  const parsed = parseClock(text);
+  const problem = parsed == null ? "Use h:mm:ss, e.g. 1:01:53" : parsed > max ? `After the video ends (${clock(max)})` : null;
+
+  // A value set from outside (a new range) replaces the text, unless the text already means it.
+  useEffect(() => {
+    setText((t) => (parseClock(t) === value ? t : clock(value)));
+  }, [value]);
+
+  useEffect(() => {
+    input.current?.setCustomValidity(problem ? `${label}: ${problem}` : "");
+  }, [problem, label]);
+
   return (
-    <span className="timepick" role="group" aria-label={label}>
-      <select aria-label={`${label} hours`} value={h} onChange={(e) => set(Number(e.target.value), m, s)}>
-        {opts(hours + 1, false)}
-      </select>
-      <b>:</b>
-      <select aria-label={`${label} minutes`} value={m} onChange={(e) => set(h, Number(e.target.value), s)}>
-        {opts(60, true)}
-      </select>
-      <b>:</b>
-      <select aria-label={`${label} seconds`} value={s} onChange={(e) => set(h, m, Number(e.target.value))}>
-        {opts(60, true)}
-      </select>
+    <span className="timepick">
+      <input
+        ref={input}
+        type="text"
+        inputMode="numeric"
+        spellCheck={false}
+        autoComplete="off"
+        placeholder="h:mm:ss"
+        aria-label={label}
+        aria-invalid={problem ? true : undefined}
+        title={problem ?? undefined}
+        value={text}
+        onChange={(e) => {
+          const t = e.target.value;
+          setText(t);
+          const s = parseClock(t);
+          if (s != null && s <= max) onChange(Math.floor(s));
+        }}
+        onBlur={() => {
+          if (!problem && parsed != null) setText(clock(parsed));
+        }}
+      />
+      {problem && <span className="small range-err">{problem}</span>}
     </span>
   );
 }

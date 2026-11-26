@@ -94,7 +94,9 @@ the word list (names first, then excitement words). Results are cached per regio
   of reaction; the start never cuts a word; at least 15 s.
 - **Score**: the peak's score + 0.35 per excitement word from the word list in the window (at most + 1.05).
 - **No overlaps**: ranges are picked first; clips never overlap each other, and clips "anywhere" never enter a range.
-- Every clip keeps its reasons (e.g. `voice +2.9σ`, `words: mati`, `moved back from 0:28:38`).
+- Every clip keeps its reasons (e.g. `voice +2.9σ`, `words: mati`, `moved back from 0:28:38`). The UI shows them in
+  plain words (`core/reasons.ts`: "Voice much louder than usual") with the stored reason as the tooltip; the score is
+  tooltip-only.
 
 ### 3.6 Cut and render
 
