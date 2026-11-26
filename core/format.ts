@@ -9,6 +9,15 @@ export function clock(s: number): string {
   return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
 }
 
+/** Milliseconds → "45 s", "2 min 14 s", "1 h 3 min". */
+export function elapsed(ms: number): string {
+  const t = Math.max(0, Math.round(ms / 1000));
+  if (t < 60) return `${t} s`;
+  if (t < 3600) return `${Math.floor(t / 60)} min${t % 60 ? ` ${t % 60} s` : ""}`;
+  const m = Math.floor((t % 3600) / 60);
+  return `${Math.floor(t / 3600)} h${m ? ` ${m} min` : ""}`;
+}
+
 /** Seconds → "m:ss.s". */
 export const shortTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`;
 

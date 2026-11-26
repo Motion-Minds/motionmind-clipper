@@ -29,6 +29,7 @@ export function ImportForm() {
   const [file, setFile] = useState<File | null>(null);
   const [probe, setProbe] = useState<Probe | null>(null);
   const [probing, setProbing] = useState(false);
+  const [probeFailed, setProbeFailed] = useState(false);
   const [count, setCount] = useState(5);
   const [ranges, setRanges] = useState<TimeRange[]>([]);
   const [busy, setBusy] = useState(false);
@@ -40,6 +41,7 @@ export function ImportForm() {
 
   // Length of the linked video, so the time pickers stop at its end.
   useEffect(() => {
+    setProbeFailed(false);
     if (mode !== "link" || !isLink) {
       if (mode === "link") setProbe(null);
       return;
@@ -49,7 +51,10 @@ export function ImportForm() {
       setProbing(true);
       const res = await fetch(`/api/probe?url=${encodeURIComponent(url.trim())}`, { signal: ctl.signal }).catch(() => null);
       if (res?.ok) setProbe(await res.json());
-      else if (!ctl.signal.aborted) setProbe(null);
+      else if (!ctl.signal.aborted) {
+        setProbe(null);
+        setProbeFailed(true);
+      }
       if (!ctl.signal.aborted) setProbing(false);
     }, 500);
     return () => {
@@ -74,7 +79,16 @@ export function ImportForm() {
   const max = probe?.duration ? Math.floor(probe.duration) : FALLBACK_MAX;
   const problems = ranges.map((r, i) => rangeProblem(r, i, ranges, max));
   const total = count + ranges.reduce((n, r) => n + r.count, 0);
-  const ready = (mode === "link" ? isLink : file !== null) && total > 0 && problems.every((p) => !p);
+  const badRange = problems.findIndex((p) => p);
+  // Why "Find … clips" is disabled, shown next to it (invalid typed times are caught by the browser on submit).
+  const blocker =
+    mode === "link" && !url.trim() ? "Paste a YouTube or TikTok link first."
+    : mode === "link" && !isLink ? "That doesn't look like a link; it should start with https://"
+    : mode === "file" && !file ? "Choose a video file first."
+    : total === 0 ? "Ask for at least 1 clip."
+    : badRange >= 0 ? `Fix range ${badRange + 1}: ${problems[badRange]}`
+    : null;
+  const ready = blocker === null;
 
   const addRange = () => {
     const last = ranges[ranges.length - 1];
@@ -157,6 +171,12 @@ export function ImportForm() {
         </label>
       )}
 
+      {(probeFailed || (probe && !probe.duration)) && (
+        <div className="note small">
+          Couldn't read this video's length. Time ranges can't be checked against its end; the import itself still works.
+        </div>
+      )}
+
       {(probing || probe) && (
         <div className="probe">
           {probe?.thumbnail && <img src={probe.thumbnail} alt="" />}
@@ -173,10 +193,23 @@ export function ImportForm() {
       <div className="plan">
         <div className="plan-row">
           <span className="plan-label">
-            <b>Clips anywhere</b>
-            <span className="small muted">best moments in the whole video, outside the ranges below</span>
+            <b>{ranges.length ? "Clips from the rest of the video" : "Clips from the whole video"}</b>
+            <span className="small muted">
+              {ranges.length
+                ? count > 0
+                  ? "best moments outside your time ranges, on top of the range clips"
+                  : "none: only clips from your time ranges"
+                : "the best moments anywhere in the video"}
+            </span>
           </span>
-          <Stepper label="clips anywhere" value={count} min={0} max={30} onChange={setCount} />
+          <span className="range-end">
+            {ranges.length > 0 && count > 0 && (
+              <button type="button" className="btn small" onClick={() => setCount(0)}>
+                Ranges only
+              </button>
+            )}
+            <Stepper label="clips from the rest of the video" value={count} min={0} max={30} onChange={setCount} />
+          </span>
         </div>
 
         {ranges.map((r, i) => (
@@ -211,10 +244,11 @@ export function ImportForm() {
         </div>
       </div>
 
-      <div>
+      <div className="submit-row">
         <button className="btn primary" type="submit" disabled={busy || !ready}>
-          {busy ? (progress != null ? `Uploading ${progress}%` : "Starting…") : `Find ${total} clips`}
+          {busy ? (progress != null ? `Uploading ${progress}%` : "Starting…") : `Find ${total} ${total === 1 ? "clip" : "clips"}`}
         </button>
+        {!busy && blocker && <span className="small muted">{blocker}</span>}
       </div>
 
       {progress != null && (

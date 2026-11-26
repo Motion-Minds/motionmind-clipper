@@ -130,9 +130,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .plan-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 4px; }
 .plan-total { margin-left: auto; font-size: 14px; color: var(--text-sec); }
 .plan-total b { color: var(--accent); font-size: 18px; }
-.timepick { display: inline-flex; align-items: center; gap: 2px; font-family: "GeistMono", monospace; }
-.timepick select { width: auto; padding: 6px 8px; font-family: inherit; font-size: 13px; cursor: pointer; }
-.timepick b { color: var(--muted); padding: 0 1px; }
+.submit-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.timepick { display: inline-flex; align-items: center; gap: 8px; font-family: "GeistMono", monospace; }
+.timepick input { width: 92px; padding: 6px 8px; font-family: inherit; font-size: 13px; }
+.timepick input[aria-invalid] { border-color: rgb(var(--red-rgb) / 0.7); }
 .stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--card); }
 .stepper button { width: 34px; height: 34px; border: 0; background: none; color: var(--text); font: inherit; font-size: 18px; cursor: pointer; }
 .stepper button:hover:not(:disabled) { background: rgb(var(--accent-rgb) / 0.12); color: var(--accent); }
@@ -175,6 +176,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 @media (max-width: 900px) { .steps { grid-template-columns: 1fr; } }
 .step { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--elev); display: grid; gap: 4px; min-width: 0; }
 .step-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.step-time { margin-left: auto; font-family: "GeistMono", monospace; font-size: 11.5px; font-weight: 400; color: var(--muted); }
+.note { padding: 9px 12px; border: 1px solid rgb(var(--amber-rgb) / 0.4); border-radius: 10px; background: rgb(var(--amber-rgb) / 0.08); color: var(--text-sec); margin-bottom: 12px; }
 .step-detail { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; min-height: 18px; }
 .step.running { border-color: rgb(var(--amber-rgb) / 0.55); }
 .step.done .step-head .dot { background: var(--accent); }

@@ -6,27 +6,36 @@ export function WordsModal({ path }: { path: string }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState("");
   const [saved, setSaved] = useState("");
-  const [state, setState] = useState<"idle" | "loading" | "saving" | "saved">("idle");
+  // "failed": the list could not be loaded, so saving is blocked (it would overwrite the file with an empty text).
+  const [state, setState] = useState<"idle" | "loading" | "failed" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
 
   async function open() {
     setError(null);
     setState("loading");
     dialog.current?.showModal();
-    const res = await fetch("/api/words", { cache: "no-store" });
-    const body = await res.json();
-    setText(body.text);
-    setSaved(body.text);
-    setState("idle");
+    try {
+      const res = await fetch("/api/words", { cache: "no-store" });
+      const body = await res.json();
+      if (!res.ok || typeof body.text !== "string") throw new Error(body.error ?? res.statusText);
+      setText(body.text);
+      setSaved(body.text);
+      setState("idle");
+    } catch (e) {
+      setText("");
+      setSaved("");
+      setError(`Couldn't load the word list (${(e as Error).message || "network error"}). Close and try again; the file is unchanged.`);
+      setState("failed");
+    }
   }
 
   async function save() {
     setError(null);
     setState("saving");
-    const res = await fetch("/api/words", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-    const body = await res.json();
-    if (!res.ok) {
-      setError(body.error ?? res.statusText);
+    const res = await fetch("/api/words", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) }).catch(() => null);
+    const body = await res?.json().catch(() => ({}));
+    if (!res?.ok) {
+      setError(body?.error ?? (res ? res.statusText : "Couldn't reach Clipper; your text is still here, try Save again."));
       setState("idle");
       return;
     }
@@ -81,7 +90,7 @@ export function WordsModal({ path }: { path: string }) {
           className="words-text"
           spellCheck={false}
           value={state === "loading" ? "Loading…" : text}
-          disabled={state === "loading"}
+          disabled={state === "loading" || state === "failed"}
           onChange={(e) => {
             setText(e.target.value);
             if (state === "saved") setState("idle");
@@ -95,7 +104,7 @@ export function WordsModal({ path }: { path: string }) {
           <button type="button" className="btn" onClick={close}>
             Close
           </button>
-          <button type="button" className="btn primary" onClick={save} disabled={state === "saving" || state === "loading" || text === saved}>
+          <button type="button" className="btn primary" onClick={save} disabled={state === "saving" || state === "loading" || state === "failed" || text === saved}>
             {state === "saving" ? "Saving…" : "Save"}
           </button>
         </div>
